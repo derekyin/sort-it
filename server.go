@@ -53,7 +53,7 @@ func (s *Server) Signup(w http.ResponseWriter, r *http.Request) {
 	fmt.Println(phonenumber, days)
 
 	from := "+13658040255"
-	to := fmt.Sprintf("+1%s", phonenumber)
+	to := fmt.Sprintf("%s", phonenumber)
 
 	message := fmt.Sprintf("You have signed up for %d day ahead for your recycling reminders", days)
 

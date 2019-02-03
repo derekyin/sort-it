@@ -9,4 +9,4 @@ RUN go get github.com/pilu/fresh
 
 EXPOSE 8000
 
-CMD fresh
+CMD mfresh -c runner.conf
