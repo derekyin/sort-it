@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/sfreiberg/gotwilio"
@@ -30,6 +31,7 @@ func (s *Server) Route() {
 
 	s.router.HandleFunc("/ping", s.Ping)
 	s.router.HandleFunc("/signup/{phonenumber}/{days}", s.Signup).Methods(http.MethodPost)
+	s.router.HandleFunc("/getall", s.Getall)
 	s.logger.Info(http.ListenAndServe(":8000", s.router))
 }
 
@@ -75,4 +77,31 @@ func (s *Server) parseID(params map[string]string, idType string) (int, error) {
 	}
 
 	return id, nil
+}
+
+func (s *Server) Getall(w http.ResponseWriter, r *http.Request) {
+	users := s.repo.GetAll()
+
+	weekday := time.Now().Weekday()
+
+	for _, i := range users {
+		if i.DayOfWeek == int64(weekday) {
+			s.SendText(i.PhoneNumber)
+		}
+	}
+}
+
+func (s *Server) SendText(phone string) {
+
+	from := "+13658040255"
+	to := fmt.Sprintf("+1%s", phone)
+
+	message := fmt.Sprintf("Reminder to take out your trash!")
+
+	a, _, err := s.twilio.SendSMS(from, to, message, "", "")
+	if err != nil {
+		s.logger.Println(err)
+	}
+
+	s.logger.Println(a)
 }

@@ -5,6 +5,7 @@ import (
 
 	"cloud.google.com/go/firestore"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/api/iterator"
 )
 
 type Repo interface {
@@ -31,4 +32,25 @@ func (r *repo) CreateUser(phone string, day int) {
 	if err != nil {
 		r.log.Fatalf("Failed adding alovelace: %v", err)
 	}
+}
+
+func (r *repo) GetAll() []User {
+
+	users := make([]User, 0)
+	iter := r.fbClient.Collection("signups").Documents(context.Background())
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			r.log.Fatalf("Failed to iterate: %v", err)
+		}
+
+		users = append(users, User{
+			PhoneNumber: doc.Data()["number"].(string),
+			DayOfWeek:   doc.Data()["dayofweek"].(int64),
+		})
+	}
+	return users
 }
