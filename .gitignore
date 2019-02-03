@@ -18,3 +18,5 @@
 /tmp
 
 .env
+
+serviceaccount.json

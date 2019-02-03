@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/sfreiberg/gotwilio"
@@ -13,13 +14,15 @@ type Server struct {
 	router *mux.Router
 	logger *logrus.Logger
 	twilio *gotwilio.Twilio
+	repo   repo
 }
 
-func NewServer(router *mux.Router, logger *logrus.Logger, twilio *gotwilio.Twilio) *Server {
+func NewServer(router *mux.Router, logger *logrus.Logger, twilio *gotwilio.Twilio, repo repo) *Server {
 	return &Server{
 		router: router,
 		logger: logger,
 		twilio: twilio,
+		repo:   repo,
 	}
 }
 
@@ -38,12 +41,19 @@ func (s *Server) Ping(w http.ResponseWriter, r *http.Request) {
 func (s *Server) Signup(w http.ResponseWriter, r *http.Request) {
 
 	phonenumber := mux.Vars(r)["phonenumber"]
-	days := mux.Vars(r)["days"]
+
+	days, err := s.parseID(mux.Vars(r), "days")
+	if err != nil {
+		s.logger.Println("project not found")
+		return
+	}
+
+	fmt.Println(phonenumber, days)
 
 	from := "+13658040255"
 	to := fmt.Sprintf("+1%s", phonenumber)
 
-	message := fmt.Sprintf("You have signed up for %s day ahead for your recycling reminders", days)
+	message := fmt.Sprintf("You have signed up for %d day ahead for your recycling reminders", days)
 
 	a, _, err := s.twilio.SendSMS(from, to, message, "", "")
 	if err != nil {
@@ -52,5 +62,17 @@ func (s *Server) Signup(w http.ResponseWriter, r *http.Request) {
 
 	s.logger.Println(a)
 
+	s.repo.CreateUser(phonenumber, days)
+
 	fmt.Fprintf(w, "Signed up!")
+}
+
+func (s *Server) parseID(params map[string]string, idType string) (int, error) {
+
+	id, err := strconv.Atoi(params[idType])
+	if err != nil {
+		return -1, err
+	}
+
+	return id, nil
 }
